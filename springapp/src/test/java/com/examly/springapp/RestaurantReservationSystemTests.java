@@ -1,9 +1,12 @@
 package com.examly.springapp;
 
-import com.examly.springapp.model.*;
-import com.examly.springapp.repository.*;
-import com.examly.springapp.service.*;
-import com.examly.springapp.exception.*;
+import com.examly.springapp.model.Reservation;
+import com.examly.springapp.model.ReservationStatus;
+import com.examly.springapp.model.Restaurant;
+import com.examly.springapp.repository.ReservationRepository;
+import com.examly.springapp.repository.RestaurantRepository;
+import com.examly.springapp.service.ReservationService;
+import com.examly.springapp.service.RestaurantService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -18,7 +21,7 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
