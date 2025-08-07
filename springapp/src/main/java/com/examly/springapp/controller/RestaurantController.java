@@ -5,8 +5,6 @@ import com.examly.springapp.service.RestaurantService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import java.time.LocalTime;
 import java.util.List;
 
 @RestController
@@ -17,54 +15,44 @@ public class RestaurantController {
     private RestaurantService restaurantService;
 
     @PostMapping
-    public ResponseEntity<Restaurant> createRestaurant(@RequestBody RestaurantDTO restaurantDTO) {
-        Restaurant restaurant = Restaurant.builder()
-                .name(restaurantDTO.getName())
-                .address(restaurantDTO.getAddress())
-                .cuisine(restaurantDTO.getCuisine())
-                .openingTime(LocalTime.parse(restaurantDTO.getOpeningTime()))
-                .closingTime(LocalTime.parse(restaurantDTO.getClosingTime()))
-                .totalTables(restaurantDTO.getTotalTables())
-                .build();
-        Restaurant saved = restaurantService.createRestaurant(restaurant);
-        return ResponseEntity.ok(saved);
-    }
-
-    @GetMapping
-    public ResponseEntity<List<Restaurant>> getAllRestaurants() {
-        return ResponseEntity.ok(restaurantService.getAllRestaurants());
+    public ResponseEntity<Restaurant> create(@RequestBody Restaurant restaurant) {
+        Restaurant createdRestaurant = restaurantService.createRestaurant(restaurant);
+        return ResponseEntity.status(201).body(createdRestaurant);
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Restaurant> getRestaurantById(@PathVariable Long id) {
-        return ResponseEntity.ok(restaurantService.getRestaurantById(id));
+    public ResponseEntity<Restaurant> getById(@PathVariable Long id) {
+        Restaurant restaurant = restaurantService.getRestaurant(id);
+        if (restaurant != null) {
+            return ResponseEntity.ok(restaurant);
+        } else {
+            return ResponseEntity.notFound().build();
+        }
     }
 
-    @GetMapping("/search")
-    public ResponseEntity<List<Restaurant>> searchByCuisine(@RequestParam String cuisine) {
-        return ResponseEntity.ok(restaurantService.searchByCuisine(cuisine));
+    @PutMapping("/{id}")
+    public ResponseEntity<Restaurant> update(@PathVariable Long id, @RequestBody Restaurant restaurant) {
+        Restaurant updatedRestaurant = restaurantService.updateRestaurant(id, restaurant);
+        if (updatedRestaurant != null) {
+            return ResponseEntity.ok(updatedRestaurant);
+        } else {
+            return ResponseEntity.notFound().build();
+        }
     }
-}
 
-class RestaurantDTO {
-    private String name;
-    private String address;
-    private String cuisine;
-    private String openingTime;
-    private String closingTime;
-    private int totalTables;
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> delete(@PathVariable Long id) {
+        restaurantService.deleteRestaurant(id);
+        return ResponseEntity.noContent().build();
+    }
 
-    // Getters and setters
-    public String getName() { return name; }
-    public void setName(String name) { this.name = name; }
-    public String getAddress() { return address; }
-    public void setAddress(String address) { this.address = address; }
-    public String getCuisine() { return cuisine; }
-    public void setCuisine(String cuisine) { this.cuisine = cuisine; }
-    public String getOpeningTime() { return openingTime; }
-    public void setOpeningTime(String openingTime) { this.openingTime = openingTime; }
-    public String getClosingTime() { return closingTime; }
-    public void setClosingTime(String closingTime) { this.closingTime = closingTime; }
-    public int getTotalTables() { return totalTables; }
-    public void setTotalTables(int totalTables) { this.totalTables = totalTables; }
+    @GetMapping("/cuisine/{cuisine}")
+    public ResponseEntity<List<Restaurant>> getByCuisine(@PathVariable String cuisine) {
+        return ResponseEntity.ok(restaurantService.getRestaurantsByCuisine(cuisine));
+    }
+
+    @GetMapping
+    public ResponseEntity<List<Restaurant>> getAll() {
+        return ResponseEntity.ok(restaurantService.getAllRestaurants());
+    }
 }

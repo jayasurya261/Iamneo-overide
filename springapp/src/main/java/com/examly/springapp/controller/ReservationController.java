@@ -20,15 +20,15 @@ public class ReservationController {
 
     @PostMapping
     public ResponseEntity<Reservation> createReservation(@RequestBody ReservationDTO reservationDTO) {
-        Reservation reservation = Reservation.builder()
-                .customerName(reservationDTO.getCustomerName())
-                .customerEmail(reservationDTO.getCustomerEmail())
-                .customerPhone(reservationDTO.getCustomerPhone())
-                .reservationDate(LocalDate.parse(reservationDTO.getReservationDate()))
-                .reservationTime(LocalTime.parse(reservationDTO.getReservationTime()))
-                .partySize(reservationDTO.getPartySize())
-                .specialRequests(reservationDTO.getSpecialRequests())
-                .build();
+        Reservation reservation = new Reservation();
+        reservation.setCustomerName(reservationDTO.getCustomerName());
+        reservation.setCustomerEmail(reservationDTO.getCustomerEmail());
+        reservation.setCustomerPhone(reservationDTO.getCustomerPhone());
+        reservation.setReservationDate(LocalDate.parse(reservationDTO.getReservationDate()));
+        reservation.setReservationTime(LocalTime.parse(reservationDTO.getReservationTime()));
+        reservation.setPartySize(reservationDTO.getPartySize());
+        reservation.setSpecialRequests(reservationDTO.getSpecialRequests());
+
         Reservation saved = reservationService.createReservation(reservation, reservationDTO.getRestaurantId());
         return ResponseEntity.ok(saved);
     }
@@ -49,33 +49,4 @@ public class ReservationController {
         reservationService.cancelReservation(id);
         return ResponseEntity.noContent().build();
     }
-}
-
-class ReservationDTO {
-    private Long restaurantId;
-    private String customerName;
-    private String customerEmail;
-    private String customerPhone;
-    private String reservationDate;
-    private String reservationTime;
-    private int partySize;
-    private String specialRequests;
-
-    // Getters and setters
-    public Long getRestaurantId() { return restaurantId; }
-    public void setRestaurantId(Long restaurantId) { this.restaurantId = restaurantId; }
-    public String getCustomerName() { return customerName; }
-    public void setCustomerName(String customerName) { this.customerName = customerName; }
-    public String getCustomerEmail() { return customerEmail; }
-    public void setCustomerEmail(String customerEmail) { this.customerEmail = customerEmail; }
-    public String getCustomerPhone() { return customerPhone; }
-    public void setCustomerPhone(String customerPhone) { this.customerPhone = customerPhone; }
-    public String getReservationDate() { return reservationDate; }
-    public void setReservationDate(String reservationDate) { this.reservationDate = reservationDate; }
-    public String getReservationTime() { return reservationTime; }
-    public void setReservationTime(String reservationTime) { this.reservationTime = reservationTime; }
-    public int getPartySize() { return partySize; }
-    public void setPartySize(int partySize) { this.partySize = partySize; }
-    public String getSpecialRequests() { return specialRequests; }
-    public void setSpecialRequests(String specialRequests) { this.specialRequests = specialRequests; }
 }

@@ -2,7 +2,6 @@ package com.examly.springapp;
 
 import com.examly.springapp.model.Reservation;
 import com.examly.springapp.model.ReservationStatus;
-import com.examly.springapp.model.Restaurant;
 import com.examly.springapp.repository.ReservationRepository;
 import com.examly.springapp.repository.RestaurantRepository;
 import com.examly.springapp.service.ReservationService;
