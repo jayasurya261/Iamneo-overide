@@ -13,7 +13,7 @@ public class RestaurantController {
 
     @Autowired
     private RestaurantService restaurantService;
-
+    @CrossOrigin(origins = {"http://localhost:3000", "https://myfrontend.com"})
     @PostMapping
     public ResponseEntity<Restaurant> create(@RequestBody Restaurant restaurant) {
         Restaurant createdRestaurant = restaurantService.createRestaurant(restaurant);

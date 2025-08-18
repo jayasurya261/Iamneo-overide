@@ -1,10 +1,284 @@
 import React, { useState, useEffect } from 'react';
 import { Search, Edit3, Trash2, Plus, Calendar, Clock, Users, Phone, Mail, MessageSquare, X, Check } from 'lucide-react';
 
+// Restaurant Registration Form Component
+const RestaurantRegistrationForm = ({ isOpen, onClose }) => {
+  const [formData, setFormData] = useState({
+    name: '',
+    address: '',
+    cuisine: '',
+    openingTime: '',
+    closingTime: '',
+    totalTables: ''
+  });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState(false);
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    setError('');
+    setSuccess(false);
+
+    try {
+      const submitData = {
+        ...formData,
+        totalTables: parseInt(formData.totalTables, 10)
+      };
+
+      const response = await fetch('http://localhost:8080/api/restaurants', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(submitData)
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const result = await response.json();
+      console.log('Registration successful:', result);
+      
+      setSuccess(true);
+      // Reset form after 2 seconds and close
+      setTimeout(() => {
+        setFormData({
+          name: '',
+          address: '',
+          cuisine: '',
+          openingTime: '',
+          closingTime: '',
+          totalTables: ''
+        });
+        setSuccess(false);
+        onClose();
+      }, 2000);
+
+    } catch (err) {
+      setError('Registration failed. Please try again.');
+      console.error('Registration error:', err);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleCancel = () => {
+    setFormData({
+      name: '',
+      address: '',
+      cuisine: '',
+      openingTime: '',
+      closingTime: '',
+      totalTables: ''
+    });
+    setError('');
+    setSuccess(false);
+    onClose();
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <>
+      {/* Backdrop */}
+      <div 
+        className="fixed inset-0 bg-black bg-opacity-50 z-40"
+        onClick={handleCancel}
+      />
+      
+      {/* Form Container */}
+      <div 
+        className={`fixed top-0 left-0 h-full w-1/2 bg-gray-900 z-50 transform transition-transform duration-500 ease-out ${
+          isOpen ? 'translate-x-0' : '-translate-x-full'
+        }`}
+      >
+        <div className="h-full flex flex-col">
+          {/* Header */}
+          <div className="flex items-center justify-between p-6 border-b border-gray-700">
+            <h2 className="text-2xl font-bold text-white">Restaurant Registration</h2>
+            <button
+              onClick={handleCancel}
+              className="text-gray-400 hover:text-white transition-colors p-2"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+
+          {/* Form */}
+          <div className="flex-1 overflow-y-auto p-6">
+            <div className="space-y-6">
+              {/* Restaurant Name */}
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  Restaurant Name
+                </label>
+                <input
+                  type="text"
+                  name="name"
+                  value={formData.name}
+                  onChange={handleChange}
+                  required
+                  className="w-full px-4 py-3 bg-gray-800 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="Enter restaurant name"
+                />
+              </div>
+
+              {/* Address */}
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  Address
+                </label>
+                <textarea
+                  name="address"
+                  value={formData.address}
+                  onChange={handleChange}
+                  required
+                  rows={3}
+                  className="w-full px-4 py-3 bg-gray-800 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                  placeholder="Enter complete address"
+                />
+              </div>
+
+              {/* Cuisine */}
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  Cuisine Type
+                </label>
+                <select
+                  name="cuisine"
+                  value={formData.cuisine}
+                  onChange={handleChange}
+                  required
+                  className="w-full px-4 py-3 bg-gray-800 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  <option value="">Select cuisine type</option>
+                  <option value="Italian">Italian</option>
+                  <option value="Chinese">Chinese</option>
+                  <option value="Indian">Indian</option>
+                  <option value="Mexican">Mexican</option>
+                  <option value="Japanese">Japanese</option>
+                  <option value="American">American</option>
+                  <option value="Thai">Thai</option>
+                  <option value="French">French</option>
+                  <option value="Mediterranean">Mediterranean</option>
+                  <option value="Other">Other</option>
+                </select>
+              </div>
+
+              {/* Opening Hours */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    Opening Time
+                  </label>
+                  <input
+                    type="time"
+                    name="openingTime"
+                    value={formData.openingTime}
+                    onChange={handleChange}
+                    required
+                    className="w-full px-4 py-3 bg-gray-800 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    Closing Time
+                  </label>
+                  <input
+                    type="time"
+                    name="closingTime"
+                    value={formData.closingTime}
+                    onChange={handleChange}
+                    required
+                    className="w-full px-4 py-3 bg-gray-800 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+              </div>
+
+              {/* Total Tables */}
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  Total Tables
+                </label>
+                <input
+                  type="number"
+                  name="totalTables"
+                  value={formData.totalTables}
+                  onChange={handleChange}
+                  required
+                  min="1"
+                  className="w-full px-4 py-3 bg-gray-800 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="Enter number of tables"
+                />
+              </div>
+
+              {/* Success Message */}
+              {success && (
+                <div className="bg-green-900 border border-green-600 text-green-200 px-4 py-3 rounded-lg">
+                  ✅ Restaurant registered successfully! Closing form...
+                </div>
+              )}
+
+              {/* Error Message */}
+              {error && (
+                <div className="bg-red-900 border border-red-600 text-red-200 px-4 py-3 rounded-lg">
+                  ❌ {error}
+                </div>
+              )}
+
+              {/* Action Buttons */}
+              <div className="flex gap-4 pt-6 border-t border-gray-700">
+                <button
+                  type="button"
+                  onClick={handleCancel}
+                  disabled={isSubmitting}
+                  className="flex-1 px-6 py-3 bg-gray-700 text-white rounded-lg hover:bg-gray-600 disabled:bg-gray-800 disabled:cursor-not-allowed transition-colors font-medium"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSubmit}
+                  disabled={isSubmitting || !formData.name || !formData.address || !formData.cuisine || !formData.openingTime || !formData.closingTime || !formData.totalTables}
+                  className="flex-1 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-blue-800 disabled:cursor-not-allowed transition-colors font-medium"
+                >
+                  {isSubmitting ? (
+                    <div className="flex items-center justify-center">
+                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                      Registering...
+                    </div>
+                  ) : (
+                    'Register Restaurant'
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </>
+  );
+};
+
+// Main Reservation Admin Panel Component
 const ReservationAdminPanel = () => {
   const [reservations, setReservations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [isRegistrationFormOpen, setIsRegistrationFormOpen] = useState(false);
 
   const [filteredReservations, setFilteredReservations] = useState(reservations);
   const [searchTerm, setSearchTerm] = useState('');
@@ -143,9 +417,12 @@ const ReservationAdminPanel = () => {
                 <Search className="w-4 h-4" />
                 Refresh
               </button>
-              <button className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2">
+              <button 
+                onClick={() => setIsRegistrationFormOpen(true)}
+                className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
+              >
                 <Plus className="w-4 h-4" />
-                Add Reservation
+                Add Restaurant
               </button>
             </div>
           </div>
@@ -398,6 +675,12 @@ const ReservationAdminPanel = () => {
             </div>
           </div>
         )}
+
+        {/* Restaurant Registration Form */}
+        <RestaurantRegistrationForm
+          isOpen={isRegistrationFormOpen}
+          onClose={() => setIsRegistrationFormOpen(false)}
+        />
       </div>
     </div>
   );

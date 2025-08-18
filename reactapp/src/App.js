@@ -52,7 +52,7 @@ const App = () => {
       </SignedIn>
 
       <SignedOut>
-        <div className="text-center mt-10 text-xl text-black">
+        <div className="text-center text-xl text-black">
          
           <VideoBackground/>
         </div>
