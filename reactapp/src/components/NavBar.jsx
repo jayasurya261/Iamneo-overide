@@ -22,8 +22,8 @@ const Navbar = () => {
 
         {/* Right Navigation Links */}
         <div className="flex items-center bg-black rounded-full px-6 py-2 gap-6 text-sm font-semibold">
-          <Link to="/menu" className="hover:text-yellow-300 transition">
-            Menu
+          <Link to="/admin" className="hover:text-yellow-300 transition">
+            Admin
           </Link>
           <Link to="/reservation-list" className="hover:text-yellow-300 transition">
             Reservation

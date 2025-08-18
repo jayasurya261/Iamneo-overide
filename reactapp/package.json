@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "dependencies": {
+    "@clerk/clerk-react": "^5.42.1",
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.1",
     "@mui/material": "^7.3.1",
@@ -20,6 +21,7 @@
     "fs": "0.0.1-security",
     "jest-fetch-mock": "^3.0.3",
     "json-server": "^0.17.4",
+    "lucide-react": "^0.539.0",
     "motion": "^12.23.12",
     "msw": "^2.0.9",
     "react": "^18.2.0",
