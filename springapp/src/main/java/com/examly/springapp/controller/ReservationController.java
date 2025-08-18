@@ -13,6 +13,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/reservations")
+@CrossOrigin(origins = {"http://localhost:3000", "https://myfrontend.com"})
 public class ReservationController {
 
     @Autowired
@@ -32,16 +33,29 @@ public class ReservationController {
         Reservation saved = reservationService.createReservation(reservation, reservationDTO.getRestaurantId());
         return ResponseEntity.ok(saved);
     }
-
+    @CrossOrigin(origins = {"http://localhost:3000", "https://myfrontend.com"})
     @GetMapping
     public ResponseEntity<List<Reservation>> getAllReservations() {
         return ResponseEntity.ok(reservationService.getAllReservations());
     }
 
+    @GetMapping("/{id}")
+    public ResponseEntity<Reservation> getReservationById(@PathVariable Long id) {
+        Reservation reservation = reservationService.getReservation(id);
+        if (reservation == null) {
+            return ResponseEntity.notFound().build();
+        }
+        return ResponseEntity.ok(reservation);
+    }
+
     @PutMapping("/{id}/status")
     public ResponseEntity<Reservation> updateReservationStatus(@PathVariable Long id, @RequestBody String status) {
         ReservationStatus reservationStatus = ReservationStatus.valueOf(status);
-        return ResponseEntity.ok(reservationService.updateReservationStatus(id, reservationStatus));
+        Reservation updated = reservationService.updateReservationStatus(id, reservationStatus);
+        if (updated == null) {
+            return ResponseEntity.notFound().build();
+        }
+        return ResponseEntity.ok(updated);
     }
 
     @DeleteMapping("/{id}")

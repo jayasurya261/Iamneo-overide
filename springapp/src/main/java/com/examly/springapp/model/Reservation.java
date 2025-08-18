@@ -11,9 +11,8 @@ public class Reservation {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne
-    @JoinColumn(name = "restaurant_id")
-    private Restaurant restaurant;
+    @Column(name = "restaurant_id")
+    private Long restaurantId;
 
     private String customerName;
     private String customerEmail;
@@ -33,11 +32,11 @@ public class Reservation {
     public Reservation() {}
 
     // All-arguments constructor
-    public Reservation(Long id, Restaurant restaurant, String customerName, String customerEmail,
+    public Reservation(Long id, Long restaurantId, String customerName, String customerEmail,
                        String customerPhone, LocalDate reservationDate, LocalTime reservationTime,
                        int partySize, ReservationStatus status, String specialRequests) {
         this.id = id;
-        this.restaurant = restaurant;
+        this.restaurantId = restaurantId;
         this.customerName = customerName;
         this.customerEmail = customerEmail;
         this.customerPhone = customerPhone;
@@ -58,12 +57,12 @@ public class Reservation {
         this.id = id;
     }
 
-    public Restaurant getRestaurant() {
-        return restaurant;
+    public Long getRestaurantId() {
+        return restaurantId;
     }
 
-    public void setRestaurant(Restaurant restaurant) {
-        this.restaurant = restaurant;
+    public void setRestaurantId(Long restaurantId) {
+        this.restaurantId = restaurantId;
     }
 
     public String getCustomerName() {
@@ -134,7 +133,7 @@ public class Reservation {
     public String toString() {
         return "Reservation{" +
                 "id=" + id +
-                ", restaurant=" + (restaurant != null ? restaurant.getId() : null) +
+                ", restaurantId=" + restaurantId +
                 ", customerName='" + customerName + '\'' +
                 ", customerEmail='" + customerEmail + '\'' +
                 ", customerPhone='" + customerPhone + '\'' +

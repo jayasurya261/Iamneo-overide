@@ -19,7 +19,7 @@ public class RestaurantController {
         Restaurant createdRestaurant = restaurantService.createRestaurant(restaurant);
         return ResponseEntity.status(201).body(createdRestaurant);
     }
-
+     @CrossOrigin(origins = {"http://localhost:3000", "https://myfrontend.com"})
     @GetMapping("/{id}")
     public ResponseEntity<Restaurant> getById(@PathVariable Long id) {
         Restaurant restaurant = restaurantService.getRestaurant(id);
@@ -50,7 +50,7 @@ public class RestaurantController {
     public ResponseEntity<List<Restaurant>> getByCuisine(@PathVariable String cuisine) {
         return ResponseEntity.ok(restaurantService.getRestaurantsByCuisine(cuisine));
     }
-
+    @CrossOrigin(origins = {"http://localhost:3000", "https://myfrontend.com"})
     @GetMapping
     public ResponseEntity<List<Restaurant>> getAll() {
         return ResponseEntity.ok(restaurantService.getAllRestaurants());

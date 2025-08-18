@@ -2,8 +2,6 @@ package com.examly.springapp.model;
 
 import jakarta.persistence.*;
 import java.time.LocalTime;
-import java.util.ArrayList;
-import java.util.List;
 
 @Entity
 public class Restaurant {
@@ -19,14 +17,11 @@ public class Restaurant {
     private LocalTime closingTime;
     private int totalTables;
 
-    @OneToMany(mappedBy = "restaurant", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<Reservation> reservations = new ArrayList<>();
-
     // Constructors
     public Restaurant() {}
 
     public Restaurant(Long id, String name, String address, String cuisine, LocalTime openingTime,
-                      LocalTime closingTime, int totalTables, List<Reservation> reservations) {
+                      LocalTime closingTime, int totalTables) {
         this.id = id;
         this.name = name;
         this.address = address;
@@ -34,7 +29,6 @@ public class Restaurant {
         this.openingTime = openingTime;
         this.closingTime = closingTime;
         this.totalTables = totalTables;
-        this.reservations = reservations;
     }
 
     // Getters and Setters
@@ -65,8 +59,4 @@ public class Restaurant {
     public int getTotalTables() { return totalTables; }
 
     public void setTotalTables(int totalTables) { this.totalTables = totalTables; }
-
-    public List<Reservation> getReservations() { return reservations; }
-
-    public void setReservations(List<Reservation> reservations) { this.reservations = reservations; }
 }

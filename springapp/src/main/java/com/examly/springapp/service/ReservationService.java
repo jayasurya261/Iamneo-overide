@@ -17,13 +17,18 @@ public class ReservationService {
     private RestaurantRepository restaurantRepository;
 
     public Reservation createReservation(Reservation reservation, Long restaurantId) {
+        // Verify restaurant exists and get opening hours for validation
         Restaurant restaurant = restaurantRepository.findById(restaurantId).orElse(null);
         if (restaurant == null) return null;
+
+        // Validate reservation time against restaurant hours
         if (reservation.getReservationTime().isBefore(restaurant.getOpeningTime())
                 || reservation.getReservationTime().isAfter(restaurant.getClosingTime())) {
             throw new IllegalArgumentException("Reservation time must be within restaurant opening hours");
         }
-        reservation.setRestaurant(restaurant);
+
+        // Set restaurant ID instead of restaurant object
+        reservation.setRestaurantId(restaurantId);
         reservation.setStatus(ReservationStatus.PENDING);
         return reservationRepository.save(reservation);
     }
@@ -36,8 +41,8 @@ public class ReservationService {
         return reservationRepository.findAll();
     }
 
-    public List<Reservation> getReservationsByRestaurantId(Long id) {
-        return reservationRepository.findByRestaurantId(id);
+    public List<Reservation> getReservationsByRestaurantId(Long restaurantId) {
+        return reservationRepository.findByRestaurantId(restaurantId);
     }
 
     public Reservation updateReservationStatus(Long id, ReservationStatus status) {
@@ -49,5 +54,14 @@ public class ReservationService {
 
     public void cancelReservation(Long id) {
         reservationRepository.deleteById(id);
+    }
+
+    // Additional helper method to get restaurant details if needed
+    public Restaurant getRestaurantForReservation(Long reservationId) {
+        Reservation reservation = reservationRepository.findById(reservationId).orElse(null);
+        if (reservation == null || reservation.getRestaurantId() == null) {
+            return null;
+        }
+        return restaurantRepository.findById(reservation.getRestaurantId()).orElse(null);
     }
 }
