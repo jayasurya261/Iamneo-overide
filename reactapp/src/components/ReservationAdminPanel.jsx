@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Edit3, Trash2, Plus, Calendar, Clock, Users, Phone, Mail, MessageSquare, X, Check } from 'lucide-react';
+import { Search, Edit3, Trash2, Plus, Calendar, Clock, Users, Phone, Mail, MessageSquare, X, Check, AlertCircle, CheckCircle, XCircle } from 'lucide-react';
 
 // Restaurant Registration Form Component
 const RestaurantRegistrationForm = ({ isOpen, onClose }) => {
@@ -273,6 +273,47 @@ const RestaurantRegistrationForm = ({ isOpen, onClose }) => {
   );
 };
 
+// Status Badge Component
+const StatusBadge = ({ status }) => {
+  const getStatusConfig = (status) => {
+    switch (status) {
+      case 'PENDING':
+        return {
+          color: 'bg-yellow-100 text-yellow-800 border-yellow-200',
+          icon: <AlertCircle className="w-3 h-3" />,
+          text: 'Pending'
+        };
+      case 'CONFIRMED':
+        return {
+          color: 'bg-green-100 text-green-800 border-green-200',
+          icon: <CheckCircle className="w-3 h-3" />,
+          text: 'Confirmed'
+        };
+      case 'CANCELLED':
+        return {
+          color: 'bg-red-100 text-red-800 border-red-200',
+          icon: <XCircle className="w-3 h-3" />,
+          text: 'Cancelled'
+        };
+      default:
+        return {
+          color: 'bg-gray-100 text-gray-800 border-gray-200',
+          icon: <AlertCircle className="w-3 h-3" />,
+          text: status || 'Unknown'
+        };
+    }
+  };
+
+  const config = getStatusConfig(status);
+
+  return (
+    <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium border ${config.color}`}>
+      {config.icon}
+      {config.text}
+    </span>
+  );
+};
+
 // Main Reservation Admin Panel Component
 const ReservationAdminPanel = () => {
   const [reservations, setReservations] = useState([]);
@@ -283,9 +324,11 @@ const ReservationAdminPanel = () => {
   const [filteredReservations, setFilteredReservations] = useState(reservations);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedDate, setSelectedDate] = useState('');
+  const [selectedStatus, setSelectedStatus] = useState('');
   const [editingReservation, setEditingReservation] = useState(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(null);
   const [editForm, setEditForm] = useState({});
+  const [statusUpdating, setStatusUpdating] = useState(null);
 
   // Fetch reservations from API
   const fetchReservations = async () => {
@@ -308,12 +351,50 @@ const ReservationAdminPanel = () => {
     }
   };
 
+  // Update reservation status
+  const updateReservationStatus = async (reservationId, newStatus) => {
+    try {
+      setStatusUpdating(reservationId);
+      
+      const response = await fetch(`http://localhost:8080/api/reservations/${reservationId}/status`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'text/plain',
+        },
+        body: newStatus
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const updatedReservation = await response.json();
+      
+      // Update local state
+      setReservations(prev => 
+        prev.map(res => 
+          res.id === reservationId 
+            ? { ...res, status: newStatus }
+            : res
+        )
+      );
+
+      console.log('Status updated successfully:', updatedReservation);
+      
+    } catch (err) {
+      console.error('Error updating status:', err);
+      setError(`Failed to update status: ${err.message}`);
+    } finally {
+      setStatusUpdating(null);
+    }
+  };
+
   // Load reservations on component mount
   useEffect(() => {
     fetchReservations();
   }, []);
 
-  // Filter reservations based on search and date
+  // Filter reservations based on search, date, and status
   useEffect(() => {
     let filtered = reservations.filter(reservation => {
       const matchesSearch = reservation.customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -322,10 +403,12 @@ const ReservationAdminPanel = () => {
       
       const matchesDate = selectedDate === '' || reservation.reservationDate === selectedDate;
       
-      return matchesSearch && matchesDate;
+      const matchesStatus = selectedStatus === '' || reservation.status === selectedStatus;
+      
+      return matchesSearch && matchesDate && matchesStatus;
     });
     setFilteredReservations(filtered);
-  }, [searchTerm, selectedDate, reservations]);
+  }, [searchTerm, selectedDate, selectedStatus, reservations]);
 
   const formatDate = (dateString) => {
     const date = new Date(dateString);
@@ -353,14 +436,34 @@ const ReservationAdminPanel = () => {
     setEditForm({ ...reservation });
   };
 
-  const handleSaveEdit = () => {
-    // Here you would make an API call to update the reservation
-    // For demo purposes, we'll update the local state
-    setReservations(prev => 
-      prev.map(res => res.id === editingReservation ? editForm : res)
-    );
-    setEditingReservation(null);
-    setEditForm({});
+  const handleSaveEdit = async () => {
+    try {
+      const response = await fetch(`http://localhost:8080/api/reservations/${editingReservation}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(editForm)
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const updatedReservation = await response.json();
+      
+      // Update local state
+      setReservations(prev => 
+        prev.map(res => res.id === editingReservation ? updatedReservation : res)
+      );
+      
+      setEditingReservation(null);
+      setEditForm({});
+      
+    } catch (err) {
+      console.error('Error updating reservation:', err);
+      setError(`Failed to update reservation: ${err.message}`);
+    }
   };
 
   const handleCancelEdit = () => {
@@ -382,19 +485,28 @@ const ReservationAdminPanel = () => {
       setReservations(prev => prev.filter(res => res.id !== id));
       setShowDeleteConfirm(null);
       
-      // Show success message (you can add a toast notification here)
       console.log(`Reservation ${id} deleted successfully`);
       
     } catch (err) {
       console.error('Error deleting reservation:', err);
       setError(`Failed to delete reservation: ${err.message}`);
-      // Keep the confirmation dialog open on error
     }
   };
 
   const handleInputChange = (field, value) => {
     setEditForm(prev => ({ ...prev, [field]: value }));
   };
+
+  // Get status counts for summary
+  const getStatusCounts = () => {
+    return reservations.reduce((acc, reservation) => {
+      const status = reservation.status || 'PENDING';
+      acc[status] = (acc[status] || 0) + 1;
+      return acc;
+    }, {});
+  };
+
+  const statusCounts = getStatusCounts();
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
@@ -427,6 +539,26 @@ const ReservationAdminPanel = () => {
             </div>
           </div>
 
+          {/* Status Summary */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+            <div className="bg-gray-50 p-4 rounded-lg">
+              <div className="text-2xl font-bold text-gray-900">{reservations.length}</div>
+              <div className="text-sm text-gray-600">Total Reservations</div>
+            </div>
+            <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
+              <div className="text-2xl font-bold text-yellow-800">{statusCounts.PENDING || 0}</div>
+              <div className="text-sm text-yellow-600">Pending</div>
+            </div>
+            <div className="bg-green-50 p-4 rounded-lg border border-green-200">
+              <div className="text-2xl font-bold text-green-800">{statusCounts.CONFIRMED || 0}</div>
+              <div className="text-sm text-green-600">Confirmed</div>
+            </div>
+            <div className="bg-red-50 p-4 rounded-lg border border-red-200">
+              <div className="text-2xl font-bold text-red-800">{statusCounts.CANCELLED || 0}</div>
+              <div className="text-sm text-red-600">Cancelled</div>
+            </div>
+          </div>
+
           {/* Filters */}
           <div className="flex flex-col sm:flex-row gap-4">
             <div className="flex-1 relative">
@@ -447,6 +579,18 @@ const ReservationAdminPanel = () => {
                 value={selectedDate}
                 onChange={(e) => setSelectedDate(e.target.value)}
               />
+            </div>
+            <div>
+              <select
+                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                value={selectedStatus}
+                onChange={(e) => setSelectedStatus(e.target.value)}
+              >
+                <option value="">All Status</option>
+                <option value="PENDING">Pending</option>
+                <option value="CONFIRMED">Confirmed</option>
+                <option value="CANCELLED">Cancelled</option>
+              </select>
             </div>
           </div>
         </div>
@@ -473,176 +617,200 @@ const ReservationAdminPanel = () => {
           ) : (
             <>
               <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Customer</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Contact</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date & Time</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Party Size</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Special Requests</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {filteredReservations.map((reservation) => (
-                  <tr key={reservation.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      {editingReservation === reservation.id ? (
-                        <input
-                          type="text"
-                          value={editForm.customerName}
-                          onChange={(e) => handleInputChange('customerName', e.target.value)}
-                          className="w-full px-2 py-1 border border-gray-300 rounded"
-                        />
-                      ) : (
-                        <div className="text-sm font-medium text-gray-900">{reservation.customerName}</div>
-                      )}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      {editingReservation === reservation.id ? (
-                        <div className="space-y-1">
-                          <input
-                            type="email"
-                            value={editForm.customerEmail}
-                            onChange={(e) => handleInputChange('customerEmail', e.target.value)}
-                            className="w-full px-2 py-1 border border-gray-300 rounded text-xs"
-                          />
-                          <input
-                            type="tel"
-                            value={editForm.customerPhone}
-                            onChange={(e) => handleInputChange('customerPhone', e.target.value)}
-                            className="w-full px-2 py-1 border border-gray-300 rounded text-xs"
-                          />
-                        </div>
-                      ) : (
-                        <div>
-                          <div className="text-sm text-gray-900 flex items-center gap-1">
-                            <Mail className="w-3 h-3" />
-                            {reservation.customerEmail}
-                          </div>
-                          <div className="text-sm text-gray-500 flex items-center gap-1">
-                            <Phone className="w-3 h-3" />
-                            {reservation.customerPhone}
-                          </div>
-                        </div>
-                      )}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      {editingReservation === reservation.id ? (
-                        <div className="space-y-1">
-                          <input
-                            type="date"
-                            value={editForm.reservationDate}
-                            onChange={(e) => handleInputChange('reservationDate', e.target.value)}
-                            className="w-full px-2 py-1 border border-gray-300 rounded text-xs"
-                          />
-                          <input
-                            type="time"
-                            value={editForm.reservationTime}
-                            onChange={(e) => handleInputChange('reservationTime', e.target.value)}
-                            className="w-full px-2 py-1 border border-gray-300 rounded text-xs"
-                          />
-                        </div>
-                      ) : (
-                        <div>
-                          <div className="text-sm text-gray-900 flex items-center gap-1">
-                            <Calendar className="w-3 h-3" />
-                            {formatDate(reservation.reservationDate)}
-                          </div>
-                          <div className="text-sm text-gray-500 flex items-center gap-1">
-                            <Clock className="w-3 h-3" />
-                            {formatTime(reservation.reservationTime)}
-                          </div>
-                        </div>
-                      )}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      {editingReservation === reservation.id ? (
-                        <input
-                          type="number"
-                          min="1"
-                          value={editForm.partySize}
-                          onChange={(e) => handleInputChange('partySize', parseInt(e.target.value))}
-                          className="w-16 px-2 py-1 border border-gray-300 rounded"
-                        />
-                      ) : (
-                        <div className="text-sm text-gray-900 flex items-center gap-1">
-                          <Users className="w-3 h-3" />
-                          {reservation.partySize}
-                        </div>
-                      )}
-                    </td>
-                    <td className="px-6 py-4">
-                      {editingReservation === reservation.id ? (
-                        <textarea
-                          value={editForm.specialRequests}
-                          onChange={(e) => handleInputChange('specialRequests', e.target.value)}
-                          className="w-full px-2 py-1 border border-gray-300 rounded text-xs"
-                          rows="2"
-                        />
-                      ) : (
-                        <div className="text-sm text-gray-900 max-w-xs">
-                          {reservation.specialRequests && (
-                            <div className="flex items-start gap-1">
-                              <MessageSquare className="w-3 h-3 mt-0.5 flex-shrink-0" />
-                              <span className="break-words">{reservation.specialRequests}</span>
+                <table className="w-full">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Customer</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Contact</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date & Time</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Party Size</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Special Requests</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {filteredReservations.map((reservation) => (
+                      <tr key={reservation.id} className="hover:bg-gray-50">
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          {editingReservation === reservation.id ? (
+                            <input
+                              type="text"
+                              value={editForm.customerName}
+                              onChange={(e) => handleInputChange('customerName', e.target.value)}
+                              className="w-full px-2 py-1 border border-gray-300 rounded"
+                            />
+                          ) : (
+                            <div className="text-sm font-medium text-gray-900">{reservation.customerName}</div>
+                          )}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          {editingReservation === reservation.id ? (
+                            <div className="space-y-1">
+                              <input
+                                type="email"
+                                value={editForm.customerEmail}
+                                onChange={(e) => handleInputChange('customerEmail', e.target.value)}
+                                className="w-full px-2 py-1 border border-gray-300 rounded text-xs"
+                              />
+                              <input
+                                type="tel"
+                                value={editForm.customerPhone}
+                                onChange={(e) => handleInputChange('customerPhone', e.target.value)}
+                                className="w-full px-2 py-1 border border-gray-300 rounded text-xs"
+                              />
+                            </div>
+                          ) : (
+                            <div>
+                              <div className="text-sm text-gray-900 flex items-center gap-1">
+                                <Mail className="w-3 h-3" />
+                                {reservation.customerEmail}
+                              </div>
+                              <div className="text-sm text-gray-500 flex items-center gap-1">
+                                <Phone className="w-3 h-3" />
+                                {reservation.customerPhone}
+                              </div>
                             </div>
                           )}
-                        </div>
-                      )}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      {editingReservation === reservation.id ? (
-                        <div className="flex gap-2">
-                          <button
-                            onClick={handleSaveEdit}
-                            className="text-green-600 hover:text-green-900 p-1 rounded hover:bg-green-50"
-                          >
-                            <Check className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={handleCancelEdit}
-                            className="text-gray-600 hover:text-gray-900 p-1 rounded hover:bg-gray-50"
-                          >
-                            <X className="w-4 h-4" />
-                          </button>
-                        </div>
-                      ) : (
-                        <div className="flex gap-2">
-                          <button
-                            onClick={() => handleEdit(reservation)}
-                            className="text-blue-600 hover:text-blue-900 p-1 rounded hover:bg-blue-50"
-                          >
-                            <Edit3 className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={() => setShowDeleteConfirm(reservation.id)}
-                            className="text-red-600 hover:text-red-900 p-1 rounded hover:bg-red-50"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </div>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          {editingReservation === reservation.id ? (
+                            <div className="space-y-1">
+                              <input
+                                type="date"
+                                value={editForm.reservationDate}
+                                onChange={(e) => handleInputChange('reservationDate', e.target.value)}
+                                className="w-full px-2 py-1 border border-gray-300 rounded text-xs"
+                              />
+                              <input
+                                type="time"
+                                value={editForm.reservationTime}
+                                onChange={(e) => handleInputChange('reservationTime', e.target.value)}
+                                className="w-full px-2 py-1 border border-gray-300 rounded text-xs"
+                              />
+                            </div>
+                          ) : (
+                            <div>
+                              <div className="text-sm text-gray-900 flex items-center gap-1">
+                                <Calendar className="w-3 h-3" />
+                                {formatDate(reservation.reservationDate)}
+                              </div>
+                              <div className="text-sm text-gray-500 flex items-center gap-1">
+                                <Clock className="w-3 h-3" />
+                                {formatTime(reservation.reservationTime)}
+                              </div>
+                            </div>
+                          )}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          {editingReservation === reservation.id ? (
+                            <input
+                              type="number"
+                              min="1"
+                              value={editForm.partySize}
+                              onChange={(e) => handleInputChange('partySize', parseInt(e.target.value))}
+                              className="w-16 px-2 py-1 border border-gray-300 rounded"
+                            />
+                          ) : (
+                            <div className="text-sm text-gray-900 flex items-center gap-1">
+                              <Users className="w-3 h-3" />
+                              {reservation.partySize}
+                            </div>
+                          )}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="flex flex-col gap-2">
+                            <StatusBadge status={reservation.status || 'PENDING'} />
+                            {editingReservation !== reservation.id && (
+                              <select
+                                value={reservation.status || 'PENDING'}
+                                onChange={(e) => updateReservationStatus(reservation.id, e.target.value)}
+                                disabled={statusUpdating === reservation.id}
+                                className="text-xs px-2 py-1 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100"
+                              >
+                                <option value="PENDING">Pending</option>
+                                <option value="CONFIRMED">Confirmed</option>
+                                <option value="CANCELLED">Cancelled</option>
+                              </select>
+                            )}
+                            {statusUpdating === reservation.id && (
+                              <div className="text-xs text-blue-600 flex items-center gap-1">
+                                <div className="animate-spin rounded-full h-3 w-3 border-b border-blue-600"></div>
+                                Updating...
+                              </div>
+                            )}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4">
+                          {editingReservation === reservation.id ? (
+                            <textarea
+                              value={editForm.specialRequests}
+                              onChange={(e) => handleInputChange('specialRequests', e.target.value)}
+                              className="w-full px-2 py-1 border border-gray-300 rounded text-xs"
+                              rows="2"
+                            />
+                          ) : (
+                            <div className="text-sm text-gray-900 max-w-xs">
+                              {reservation.specialRequests && (
+                                <div className="flex items-start gap-1">
+                                  <MessageSquare className="w-3 h-3 mt-0.5 flex-shrink-0" />
+                                  <span className="break-words">{reservation.specialRequests}</span>
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                          {editingReservation === reservation.id ? (
+                            <div className="flex gap-2">
+                              <button
+                                onClick={handleSaveEdit}
+                                className="text-green-600 hover:text-green-900 p-1 rounded hover:bg-green-50"
+                              >
+                                <Check className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={handleCancelEdit}
+                                className="text-gray-600 hover:text-gray-900 p-1 rounded hover:bg-gray-50"
+                              >
+                                <X className="w-4 h-4" />
+                              </button>
+                            </div>
+                          ) : (
+                            <div className="flex gap-2">
+                              <button
+                                onClick={() => handleEdit(reservation)}
+                                className="text-blue-600 hover:text-blue-900 p-1 rounded hover:bg-blue-50"
+                              >
+                                <Edit3 className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() => setShowDeleteConfirm(reservation.id)}
+                                className="text-red-600 hover:text-red-900 p-1 rounded hover:bg-red-50"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </div>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
 
-          {filteredReservations.length === 0 && (
-            <div className="text-center py-12">
-              <Calendar className="mx-auto h-12 w-12 text-gray-400" />
-              <h3 className="mt-2 text-sm font-medium text-gray-900">No reservations found</h3>
-              <p className="mt-1 text-sm text-gray-500">
-                {reservations.length === 0 
-                  ? "No reservations available yet." 
-                  : "Try adjusting your search or date filter."
-                }
-              </p>
-            </div>
-          )}
+              {filteredReservations.length === 0 && (
+                <div className="text-center py-12">
+                  <Calendar className="mx-auto h-12 w-12 text-gray-400" />
+                  <h3 className="mt-2 text-sm font-medium text-gray-900">No reservations found</h3>
+                  <p className="mt-1 text-sm text-gray-500">
+                    {reservations.length === 0 
+                      ? "No reservations available yet." 
+                      : "Try adjusting your search or date filter."
+                    }
+                  </p>
+                </div>
+              )}
             </>
           )}
         </div>
